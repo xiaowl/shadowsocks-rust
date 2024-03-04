@@ -15,7 +15,7 @@ rust-version = "1.71"
 maintenance = { status = "passively-maintained" }
 
 [features]
-default = ["hickory-dns"]
+full = ["hickory-dns", "stream-cipher"]
 
 # Uses Hickory-DNS instead of tokio's builtin DNS resolver
 hickory-dns = ["hickory-resolver", "arc-swap", "notify"]
@@ -82,6 +82,7 @@ tokio = { version = "1.9.0", features = [
     "time",
 ] }
 tokio-tfo = "0.2.0"
+tokio-socks = "0.5.1"
 
 hickory-resolver = { version = "0.24", optional = true }
 arc-swap = { version = "1.6", optional = true }
@@ -91,7 +92,7 @@ aes = { version = "0.8", optional = true }
 blake3 = "1.4"
 
 [target.'cfg(any(target_arch = "x86_64", target_arch = "aarch64"))'.dependencies]
-shadowsocks-crypto = { version = "0.5.4", features = ["ring"] }
+shadowsocks-crypto = { version = "0.5.4", features = ["v1-stream"] }
 
 [target.'cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))'.dependencies]
 shadowsocks-crypto = { version = "0.5.4", features = [] }

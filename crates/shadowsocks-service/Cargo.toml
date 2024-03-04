@@ -24,6 +24,7 @@ full = [
     "local-redir",
     "local-tunnel",
     "local-socks4",
+    "stream-cipher",
 ]
 
 # Enable local server

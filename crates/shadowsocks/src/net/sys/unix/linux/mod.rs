@@ -1,6 +1,5 @@
 use std::{
-    io,
-    mem,
+    env, io, mem,
     net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr},
     os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd},
     pin::Pin,
@@ -10,6 +9,7 @@ use std::{
 };
 
 use cfg_if::cfg_if;
+use futures::TryFutureExt;
 use log::{debug, error, warn};
 use pin_project::pin_project;
 use socket2::{Domain, Protocol, SockAddr, Socket, Type};
@@ -17,14 +17,13 @@ use tokio::{
     io::{AsyncRead, AsyncWrite, ReadBuf},
     net::{TcpSocket, TcpStream as TokioTcpStream, UdpSocket},
 };
+use tokio_socks::tcp::Socks5Stream;
 use tokio_tfo::TfoStream;
 
 use crate::net::{
     sys::{set_common_sockopt_after_connect, set_common_sockopt_for_connect, socket_bind_dual_stack},
     udp::{BatchRecvMessage, BatchSendMessage},
-    AcceptOpts,
-    AddrFamily,
-    ConnectOpts,
+    AcceptOpts, AddrFamily, ConnectOpts,
 };
 
 /// A `TcpStream` that supports TFO (TCP Fast Open)
@@ -100,7 +99,13 @@ impl TcpStream {
 
         if !opts.tcp.fastopen {
             // If TFO is not enabled, it just works like a normal TcpStream
-            let stream = socket.connect(addr).await?;
+            let stream = match env::var("SS_PROXY") {
+                Ok(ss_proxy_addr) => Socks5Stream::connect(ss_proxy_addr.as_str(), addr)
+                    .map_err(|err| io::Error::new(io::ErrorKind::Other, format!("{}", err)))
+                    .await?
+                    .into_inner(),
+                Err(_) => socket.connect(addr).await?,
+            };
             set_common_sockopt_after_connect(&stream, opts)?;
 
             return Ok(TcpStream::Standard(stream));
